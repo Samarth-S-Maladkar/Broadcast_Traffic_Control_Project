@@ -15,10 +15,8 @@
 9. [Performance Analysis](#9-performance-analysis)
 10. [Expected Outputs](#10-expected-outputs)
 11. [Observations & Results](#11-observations--results)
-12. [GitHub Commands](#12-github-commands)
-13. [Viva Questions & Answers](#13-viva-questions--answers)
-14. [Screenshots / Logs to Include](#14-screenshots--logs-to-include)
-15. [Troubleshooting](#15-troubleshooting)
+12. [Screenshots / Logs to Include](#14-screenshots--logs-to-include)
+13. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -415,151 +413,8 @@ NXST_FLOW reply (ofp_version=0x01):
 
 ---
 
-## 12. GitHub Commands
 
-### Initialize and Push
-
-```bash
-# Navigate to project directory
-cd ~/sdn_broadcast_control
-
-# Initialize git repository
-git init
-
-# Set your identity (first time only)
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-
-# Stage all files
-git add topology.py controller.py README.md
-
-# Commit
-git commit -m "Initial commit: SDN Broadcast Traffic Control project"
-
-# Create repository on GitHub first (via web UI), then:
-git remote add origin https://github.com/YOUR_USERNAME/sdn-broadcast-control.git
-
-# Push to GitHub
-git push -u origin main
-# OR if default branch is master:
-git push -u origin master
-```
-
-### Troubleshooting Push Rejections
-
-```bash
-# Error: "Updates were rejected because the remote contains work"
-git pull --rebase origin main
-git push origin main
-
-# Error: "src refspec main does not match any"
-git branch -M main
-git push -u origin main
-
-# Force push (use only on fresh repos — overwrites remote)
-git push -f origin main
-
-# Check current branches
-git branch -a
-
-# Check remote URL
-git remote -v
-```
-
-### Subsequent Updates
-
-```bash
-git add .
-git commit -m "Add performance analysis results"
-git push
-```
-
----
-
-## 13. Viva Questions & Answers
-
-### Q1. What is Software Defined Networking (SDN)?
-
-**A:** SDN is a network architecture that decouples the **control plane** (routing decisions) from the **data plane** (packet forwarding). A centralized controller programs forwarding rules into switches using a standard protocol like OpenFlow. This enables programmable, application-aware network management without modifying hardware.
-
----
-
-### Q2. What is OpenFlow and how does it work?
-
-**A:** OpenFlow is a communications protocol between the SDN controller and network switches. The controller sends **flow rules** (match + action pairs) to the switch's flow table. When a packet arrives at the switch, it is matched against the flow table; if a match is found, the associated action (forward, drop, modify) is executed. If no match is found, the packet is sent to the controller as a **PacketIn** message.
-
----
-
-### Q3. What is a PacketIn event in POX?
-
-**A:** A PacketIn event is triggered when a switch receives a packet that does not match any existing flow rule and forwards it to the controller. In POX, registering for `_handle_PacketIn` allows the controller to inspect the packet, make a forwarding decision, and optionally install a flow rule to handle similar packets in the future without controller involvement.
-
----
-
-### Q4. What is ARP flooding and why is it a problem?
-
-**A:** ARP (Address Resolution Protocol) uses broadcast messages (`ff:ff:ff:ff:ff:ff`) to resolve IP→MAC mappings. A misbehaving host or a loop can generate thousands of ARP requests per second. In SDN, each broadcast triggers a PacketIn to the controller, potentially overwhelming the control plane. Additionally, the switch floods broadcasts to all ports, wasting bandwidth and CPU on all hosts.
-
----
-
-### Q5. How does your broadcast control mechanism work?
-
-**A:** The controller maintains a per-source sliding-window counter. Every broadcast packet increments the counter for its source MAC. Entries older than `RATE_WINDOW` seconds are pruned. If the count exceeds `BROADCAST_THRESHOLD`, the controller sends an `ofp_flow_mod` with:
-- **Match:** `dl_src=<offending_mac>`, `dl_dst=ff:ff:ff:ff:ff:ff`
-- **Action:** (empty — DROP)
-- **Priority:** 100 (overrides default)
-- **Timeout:** 30 seconds
-
-The switch then drops all matching broadcasts at line rate, without controller involvement.
-
----
-
-### Q6. What is a flow rule and what does it consist of?
-
-**A:** A flow rule in OpenFlow 1.0 consists of:
-- **Match fields** — header fields to match (MAC src/dst, IP src/dst, port, VLAN, etc.)
-- **Priority** — higher priority rules are matched first
-- **Counters** — packet and byte counts for statistics
-- **Actions** — what to do with matching packets (output port, drop, modify headers)
-- **Timeouts** — idle_timeout (inactivity expiry) and hard_timeout (absolute expiry)
-
----
-
-### Q7. What is the difference between idle_timeout and hard_timeout?
-
-**A:**
-- `idle_timeout`: Rule is removed if no matching packets arrive for N seconds (resets on each match)
-- `hard_timeout`: Rule is unconditionally removed after N seconds regardless of traffic
-
-In this project, DROP rules use both: `idle_timeout=30, hard_timeout=60`. This ensures blocked hosts are eventually unblocked even if they keep sending (hard_timeout) or stop sending (idle_timeout).
-
----
-
-### Q8. What is a learning switch and how does it differ from a hub?
-
-**A:** A **hub** forwards every packet out every port (blind flooding). A **learning switch** builds a MAC address table by observing which port each source MAC arrives on. When a packet arrives for a known destination MAC, it is forwarded only to the correct port, reducing unnecessary traffic. In SDN, the controller implements this logic and installs flow rules so the switch itself handles forwarding for known pairs.
-
----
-
-### Q9. Why is priority 100 used for the DROP rule?
-
-**A:** OpenFlow matches rules in priority order (highest first). The default forwarding or flood rules have priority 1 (or the controller's default). Setting the DROP rule to priority 100 ensures it is matched **before** any lower-priority flood or forward rule. Without this, the broadcast packet might still be forwarded by a lower-priority rule.
-
----
-
-### Q10. How would you extend this project for production use?
-
-**A:** Several enhancements for production:
-1. **Per-port rate limiting** using OpenFlow meters (OpenFlow 1.3+)
-2. **ARP proxying** — the controller answers ARP requests on behalf of hosts, eliminating broadcasts entirely
-3. **VLAN-aware broadcast domains** to isolate segments
-4. **Integration with Ryu or ONOS** for better scalability and REST APIs
-5. **Persistent blocked-MAC database** using Redis or SQLite
-6. **SNMP/syslog alerts** when thresholds are exceeded
-
----
-
-## 14. Screenshots / Logs to Include
+## 12. Screenshots / Logs to Include
 
 For a complete academic submission, capture and include:
 
@@ -579,7 +434,7 @@ For a complete academic submission, capture and include:
 
 ---
 
-## 15. Troubleshooting
+## 13. Troubleshooting
 
 | Problem | Cause | Fix |
 |---|---|---|
@@ -594,4 +449,4 @@ For a complete academic submission, capture and include:
 
 ---
 
-*Project by: [Your Name] | [Roll Number] | [Course Name] | [Institution]*
+*Project by: Samarth S Maladkar 
